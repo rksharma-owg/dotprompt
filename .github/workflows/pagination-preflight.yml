@@ -1,0 +1,232 @@
+{
+  "name": "Pagination preflight (fork only)",
+  "on": {
+    "push": {
+      "branches": [
+        "codex/dotprompt-pagination-preflight"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "go": {
+      "name": "Go ${{ matrix.go }} / ${{ matrix.revision }}",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "revision": "patch",
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0",
+              "go": "1.25.x"
+            },
+            {
+              "revision": "patch",
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0",
+              "go": "1.26.x"
+            },
+            {
+              "revision": "baseline",
+              "sha": "964b3a83c49a357d4a1b215bd307d513f2a38aef",
+              "go": "1.25.x"
+            },
+            {
+              "revision": "baseline",
+              "sha": "964b3a83c49a357d4a1b215bd307d513f2a38aef",
+              "go": "1.26.x"
+            }
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v6",
+          "with": {
+            "ref": "${{ matrix.sha }}"
+          }
+        },
+        {
+          "name": "Verify exact tested source",
+          "env": {
+            "EXPECTED_SHA": "${{ matrix.sha }}"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "uses": "actions/setup-go@v6",
+          "with": {
+            "go-version": "${{ matrix.go }}"
+          }
+        },
+        {
+          "name": "Runtime",
+          "run": "go version"
+        },
+        {
+          "name": "Build",
+          "run": "go build -C go -v ./..."
+        },
+        {
+          "name": "Tests",
+          "run": "go test -C go -v ./..."
+        },
+        {
+          "name": "Vulnerability scan",
+          "run": "go install golang.org/x/vuln/cmd/govulncheck@latest\ngovulncheck -C go ./..."
+        }
+      ]
+    },
+    "quality": {
+      "name": "Patch quality",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "matrix": {
+          "include": [
+            {
+              "revision": "patch",
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0"
+            }
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v6",
+          "with": {
+            "ref": "${{ matrix.sha }}"
+          }
+        },
+        {
+          "name": "Verify exact tested source",
+          "env": {
+            "EXPECTED_SHA": "${{ matrix.sha }}"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "uses": "actions/setup-go@v6",
+          "with": {
+            "go-version": "stable"
+          }
+        },
+        {
+          "name": "Runtime",
+          "run": "go version"
+        },
+        {
+          "name": "Formatting",
+          "run": "test -z \"$(gofmt -l go/)\""
+        },
+        {
+          "name": "Dependency hygiene",
+          "working-directory": "go",
+          "run": "go mod tidy\ngit diff --exit-code -- go.mod go.sum"
+        },
+        {
+          "name": "Vet",
+          "run": "go vet -C go ./..."
+        },
+        {
+          "name": "Race and coverage",
+          "run": "go test -C go -race -coverprofile=coverage.out ./..."
+        },
+        {
+          "uses": "golangci/golangci-lint-action@v7",
+          "with": {
+            "version": "v2.10.1",
+            "working-directory": "go"
+          }
+        },
+        {
+          "name": "License headers",
+          "run": "./scripts/check_license"
+        },
+        {
+          "name": "Upstream TODO check",
+          "run": "python3 -m pip install PyYAML\npython3 - <<'PYCODE'\nimport subprocess, yaml\nwith open('.github/workflows/todo-check.yml') as f:\n    workflow = yaml.safe_load(f)\nstep = next(s for s in workflow['jobs']['check-todos']['steps'] if 'run' in s)\nsubprocess.run(['bash', '-c', step['run']], check=True)\nPYCODE"
+        }
+      ]
+    },
+    "bazel": {
+      "name": "Bazel Java ${{ matrix.java }} / ${{ matrix.revision }}",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 30,
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "include": [
+            {
+              "revision": "patch",
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0",
+              "java": 17
+            },
+            {
+              "revision": "patch",
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0",
+              "java": 21
+            },
+            {
+              "revision": "baseline",
+              "sha": "964b3a83c49a357d4a1b215bd307d513f2a38aef",
+              "java": 17
+            },
+            {
+              "revision": "baseline",
+              "sha": "964b3a83c49a357d4a1b215bd307d513f2a38aef",
+              "java": 21
+            }
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v6",
+          "with": {
+            "ref": "${{ matrix.sha }}"
+          }
+        },
+        {
+          "name": "Verify exact tested source",
+          "env": {
+            "EXPECTED_SHA": "${{ matrix.sha }}"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "uses": "actions/setup-java@v5",
+          "with": {
+            "distribution": "temurin",
+            "java-version": "${{ matrix.java }}"
+          }
+        },
+        {
+          "uses": "bazel-contrib/setup-bazel@0.18.0",
+          "with": {
+            "bazelisk-cache": true,
+            "disk-cache": "pagination-${{ matrix.java }}-${{ matrix.revision }}",
+            "repository-cache": true
+          }
+        },
+        {
+          "name": "Pin Java dependencies",
+          "run": "bazelisk run @maven//:pin"
+        },
+        {
+          "name": "Check Java dependency lock",
+          "run": "git diff --exit-code -- maven_install.json"
+        },
+        {
+          "name": "Build",
+          "run": "bazelisk build --config=java${{ matrix.java }} //... -- -//dart/..."
+        },
+        {
+          "name": "Tests",
+          "run": "bazelisk test --config=java${{ matrix.java }} --test_output=errors //... -- -//dart/..."
+        }
+      ]
+    }
+  }
+}
