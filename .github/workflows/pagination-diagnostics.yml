@@ -1,0 +1,114 @@
+{
+  "name": "Pagination diagnostics (fork only)",
+  "on": {
+    "push": {
+      "branches": [
+        "codex/dotprompt-pagination-diagnostics"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "lint": {
+      "name": "${{ matrix.label }}",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "matrix": {
+          "include": [
+            {
+              "label": "Baseline upstream stable lint",
+              "sha": "964b3a83c49a357d4a1b215bd307d513f2a38aef",
+              "go": "stable"
+            },
+            {
+              "label": "Patch compatible lint",
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0",
+              "go": "1.26.x"
+            }
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v6",
+          "with": {
+            "ref": "${{ matrix.sha }}"
+          }
+        },
+        {
+          "name": "Verify exact tested source",
+          "env": {
+            "EXPECTED_SHA": "${{ matrix.sha }}"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "uses": "actions/setup-go@v6",
+          "with": {
+            "go-version": "${{ matrix.go }}"
+          }
+        },
+        {
+          "name": "Runtime",
+          "run": "go version"
+        },
+        {
+          "uses": "golangci/golangci-lint-action@v7",
+          "with": {
+            "version": "v2.10.1",
+            "working-directory": "go"
+          }
+        }
+      ]
+    },
+    "hygiene": {
+      "name": "Patch license and TODO checks",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "matrix": {
+          "include": [
+            {
+              "sha": "a83a2163369b37b1bcc293a5b433f761378e75d0",
+              "go": "1.26.x"
+            }
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v6",
+          "with": {
+            "ref": "${{ matrix.sha }}"
+          }
+        },
+        {
+          "name": "Verify exact tested source",
+          "env": {
+            "EXPECTED_SHA": "${{ matrix.sha }}"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "uses": "actions/setup-go@v6",
+          "with": {
+            "go-version": "${{ matrix.go }}"
+          }
+        },
+        {
+          "name": "Runtime",
+          "run": "go version"
+        },
+        {
+          "name": "License headers",
+          "run": "./scripts/check_license"
+        },
+        {
+          "name": "Upstream TODO check",
+          "run": "python3 -m pip install PyYAML\npython3 - <<'PYCODE'\nimport subprocess, yaml\nwith open('.github/workflows/todo-check.yml') as f:\n    workflow = yaml.safe_load(f)\nstep = next(s for s in workflow['jobs']['check-todos']['steps'] if 'run' in s)\nsubprocess.run(['bash', '-c', step['run']], check=True)\nPYCODE"
+        }
+      ]
+    }
+  }
+}
