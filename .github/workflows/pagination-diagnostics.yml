@@ -28,7 +28,8 @@
               "go": "1.26.x"
             }
           ]
-        }
+        },
+        "fail-fast": false
       },
       "steps": [
         {
