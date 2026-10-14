@@ -90,15 +90,15 @@
           "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
           "with": {
             "repository": "rksharma-owg/dotprompt",
-            "ref": "codex/dotprompt-fork-checkout-candidate",
+            "ref": "codex/dotprompt-fork-ci-candidate",
             "persist-credentials": false
           }
         },
         {
           "name": "Verify exact source and branch",
           "env": {
-            "EXPECTED_SHA": "87d02c3a06bad485ca65ffdef732d2048db5cf8e",
-            "EXPECTED_BRANCH": "codex/dotprompt-fork-checkout-candidate"
+            "EXPECTED_SHA": "046239d6c70161ff443c34e23236be87a686e4fa",
+            "EXPECTED_BRANCH": "codex/dotprompt-fork-ci-candidate"
           },
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
         },
@@ -158,6 +158,85 @@
         }
       ],
       "timeout-minutes": 15
+    },
+    "maven": {
+      "name": "Exact candidate Java ${{ matrix.java }} Maven lock",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 15,
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "java": [
+            17,
+            21
+          ]
+        }
+      },
+      "steps": [
+        {
+          "name": "Checkout explicit head branch",
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "with": {
+            "repository": "rksharma-owg/dotprompt",
+            "ref": "codex/dotprompt-fork-ci-candidate",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Verify exact source and branch",
+          "env": {
+            "EXPECTED_SHA": "046239d6c70161ff443c34e23236be87a686e4fa",
+            "EXPECTED_BRANCH": "codex/dotprompt-fork-ci-candidate"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "uses": "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
+          "with": {
+            "distribution": "temurin",
+            "java-version": "${{ matrix.java }}"
+          }
+        },
+        {
+          "uses": "bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77",
+          "with": {
+            "bazelisk-cache": true,
+            "disk-cache": "checkout-maven-${{ matrix.java }}",
+            "repository-cache": true
+          }
+        },
+        {
+          "name": "Exact upstream Maven pin",
+          "run": "bazelisk run @maven//:pin"
+        },
+        {
+          "name": "Exact upstream unchanged Maven lock",
+          "run": "git diff --exit-code -- maven_install.json\ntest -z \"$(git status --porcelain maven_install.json)\""
+        }
+      ]
+    },
+    "push-control": {
+      "name": "Actual push event repository and ref fallback",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 10,
+      "steps": [
+        {
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "with": {
+            "repository": "${{ github.event.pull_request.head.repo.full_name || github.repository }}",
+            "ref": "${{ github.head_ref }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Verify push context source",
+          "env": {
+            "EXPECTED_SHA": "${{ github.sha }}",
+            "EXPECTED_REPOSITORY": "${{ github.repository }}"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git remote get-url origin)\" = \"https://github.com/$EXPECTED_REPOSITORY\"\ngit show -s --format=\"%H %s\" HEAD"
+        }
+      ]
     }
   }
 }
