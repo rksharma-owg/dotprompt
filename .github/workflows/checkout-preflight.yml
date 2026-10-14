@@ -150,11 +150,11 @@
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
         },
         {
-          "name": "Existing release-please recognition",
+          "name": "Existing release-please prefix recognition (controlled branch value)",
           "env": {
-            "GITHUB_HEAD_REF": "release-please--branches--main"
+            "CONTROL_HEAD_REF": "release-please--branches--main"
           },
-          "run": "if [[ \"${GITHUB_HEAD_REF}\" == release-please--* ]]; then\n  echo \"is_release_please=true\" >> \"$GITHUB_OUTPUT\"\nelse\n  echo \"is_release_please=false\" >> \"$GITHUB_OUTPUT\"\n  exit 1\nfi"
+          "run": "if [[ \"${CONTROL_HEAD_REF}\" == release-please--* ]]; then\n  echo \"is_release_please=true\" >> \"$GITHUB_OUTPUT\"\nelse\n  echo \"is_release_please=false\" >> \"$GITHUB_OUTPUT\"\n  exit 1\nfi"
         }
       ],
       "timeout-minutes": 15
