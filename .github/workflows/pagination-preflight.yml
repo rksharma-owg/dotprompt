@@ -43,9 +43,10 @@
       },
       "steps": [
         {
-          "uses": "actions/checkout@v6",
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
           "with": {
-            "ref": "${{ matrix.sha }}"
+            "ref": "${{ matrix.sha }}",
+            "persist-credentials": false
           }
         },
         {
@@ -56,7 +57,7 @@
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
         },
         {
-          "uses": "actions/setup-go@v6",
+          "uses": "actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
           "with": {
             "go-version": "${{ matrix.go }}"
           }
@@ -75,7 +76,7 @@
         },
         {
           "name": "Vulnerability scan",
-          "run": "go install golang.org/x/vuln/cmd/govulncheck@latest\ngovulncheck -C go ./..."
+          "run": "GOTOOLCHAIN=auto go install golang.org/x/vuln/cmd/govulncheck@latest\ngovulncheck -C go ./..."
         }
       ]
     },
@@ -94,9 +95,10 @@
       },
       "steps": [
         {
-          "uses": "actions/checkout@v6",
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
           "with": {
-            "ref": "${{ matrix.sha }}"
+            "ref": "${{ matrix.sha }}",
+            "persist-credentials": false
           }
         },
         {
@@ -107,7 +109,7 @@
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
         },
         {
-          "uses": "actions/setup-go@v6",
+          "uses": "actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
           "with": {
             "go-version": "stable"
           }
@@ -134,10 +136,11 @@
           "run": "go test -C go -race -coverprofile=coverage.out ./..."
         },
         {
-          "uses": "golangci/golangci-lint-action@v7",
+          "uses": "golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa",
           "with": {
             "version": "v2.10.1",
-            "working-directory": "go"
+            "working-directory": "go",
+            "install-mode": "goinstall"
           }
         },
         {
@@ -183,9 +186,10 @@
       },
       "steps": [
         {
-          "uses": "actions/checkout@v6",
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
           "with": {
-            "ref": "${{ matrix.sha }}"
+            "ref": "${{ matrix.sha }}",
+            "persist-credentials": false
           }
         },
         {
@@ -196,14 +200,14 @@
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ngit show -s --format=\"%H %s\" HEAD"
         },
         {
-          "uses": "actions/setup-java@v5",
+          "uses": "actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961",
           "with": {
             "distribution": "temurin",
             "java-version": "${{ matrix.java }}"
           }
         },
         {
-          "uses": "bazel-contrib/setup-bazel@0.18.0",
+          "uses": "bazel-contrib/setup-bazel@77a1d3d18379c7cb0a7e3b9fcaaa4d94f1029763",
           "with": {
             "bazelisk-cache": true,
             "disk-cache": "pagination-${{ matrix.java }}-${{ matrix.revision }}",
