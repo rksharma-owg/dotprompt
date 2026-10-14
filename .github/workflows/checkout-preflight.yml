@@ -90,15 +90,15 @@
           "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
           "with": {
             "repository": "rksharma-owg/dotprompt",
-            "ref": "codex/dotprompt-fork-ci-candidate",
+            "ref": "codex/dotprompt-ci-policy-candidate",
             "persist-credentials": false
           }
         },
         {
           "name": "Verify exact source and branch",
           "env": {
-            "EXPECTED_SHA": "046239d6c70161ff443c34e23236be87a686e4fa",
-            "EXPECTED_BRANCH": "codex/dotprompt-fork-ci-candidate"
+            "EXPECTED_SHA": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "EXPECTED_BRANCH": "codex/dotprompt-ci-policy-candidate"
           },
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
         },
@@ -178,15 +178,15 @@
           "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
           "with": {
             "repository": "rksharma-owg/dotprompt",
-            "ref": "codex/dotprompt-fork-ci-candidate",
+            "ref": "codex/dotprompt-ci-policy-candidate",
             "persist-credentials": false
           }
         },
         {
           "name": "Verify exact source and branch",
           "env": {
-            "EXPECTED_SHA": "046239d6c70161ff443c34e23236be87a686e4fa",
-            "EXPECTED_BRANCH": "codex/dotprompt-fork-ci-candidate"
+            "EXPECTED_SHA": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "EXPECTED_BRANCH": "codex/dotprompt-ci-policy-candidate"
           },
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
         },
@@ -235,6 +235,109 @@
             "EXPECTED_REPOSITORY": "${{ github.repository }}"
           },
           "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git remote get-url origin)\" = \"https://github.com/$EXPECTED_REPOSITORY\"\ngit show -s --format=\"%H %s\" HEAD"
+        }
+      ]
+    },
+    "changed-files": {
+      "name": "Fixed changed-files actual path and output controls",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 15,
+      "steps": [
+        {
+          "name": "Checkout explicit head branch",
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "with": {
+            "repository": "rksharma-owg/dotprompt",
+            "ref": "codex/dotprompt-ci-policy-candidate",
+            "persist-credentials": false,
+            "fetch-depth": 0
+          }
+        },
+        {
+          "name": "Verify exact source and branch",
+          "env": {
+            "EXPECTED_SHA": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "EXPECTED_BRANCH": "codex/dotprompt-ci-policy-candidate"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "name": "Fixed action with actual Go workflow patterns",
+          "uses": "tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32",
+          "id": "go-files",
+          "with": {
+            "base_sha": "e47c49c8d1ed312828f75e102e4406e67d2fad5b",
+            "sha": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "files": "go/**\nspec/**\n.github/workflows/go.yml"
+          }
+        },
+        {
+          "name": "Fixed action with actual lint workflow patterns",
+          "uses": "tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32",
+          "id": "lint-files",
+          "with": {
+            "base_sha": "e47c49c8d1ed312828f75e102e4406e67d2fad5b",
+            "sha": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "files": "go/**\n.github/workflows/golangci-lint.yml"
+          }
+        },
+        {
+          "name": "Fixed action nonmatching-path control",
+          "uses": "tj-actions/changed-files@2f7c5bfce28377bc069a65ba478de0a74aa0ca32",
+          "id": "unrelated-files",
+          "with": {
+            "base_sha": "e47c49c8d1ed312828f75e102e4406e67d2fad5b",
+            "sha": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "files": "docs/**"
+          }
+        },
+        {
+          "name": "Assert unchanged any_changed contract",
+          "env": {
+            "GO_CHANGED": "${{ steps.go-files.outputs.any_changed }}",
+            "LINT_CHANGED": "${{ steps.lint-files.outputs.any_changed }}",
+            "UNRELATED_CHANGED": "${{ steps.unrelated-files.outputs.any_changed }}"
+          },
+          "run": "test \"$GO_CHANGED\" = true\ntest \"$LINT_CHANGED\" = true\ntest \"$UNRELATED_CHANGED\" = false\necho \"Go=true lint=true unrelated=false\""
+        }
+      ]
+    },
+    "zizmor": {
+      "name": "Exact required zizmor 1.25.2 changed-workflow policy",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 15,
+      "steps": [
+        {
+          "name": "Checkout explicit head branch",
+          "uses": "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "with": {
+            "repository": "rksharma-owg/dotprompt",
+            "ref": "codex/dotprompt-ci-policy-candidate",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Verify exact source and branch",
+          "env": {
+            "EXPECTED_SHA": "f79a8b193947d199e1037c30b86a90cbcfa80889",
+            "EXPECTED_BRANCH": "codex/dotprompt-ci-policy-candidate"
+          },
+          "run": "test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\ntest \"$(git branch --show-current)\" = \"$EXPECTED_BRANCH\"\ngit remote get-url origin\ngit show -s --format=\"%H %s\" HEAD"
+        },
+        {
+          "name": "Materialize exact upstream scanner configuration",
+          "env": {
+            "CONTROL_CONFIG_B64": "InJ1bGVzIjoKICAiYXJ0aXBhY2tlZCI6CiAgICAicmVtYXAiOgogICAgICAic2V2ZXJpdHkiOiAibG93IgogICJib3QtY29uZGl0aW9ucyI6CiAgICAicmVtYXAiOgogICAgICAic2V2ZXJpdHkiOiAiaGlnaCIKICAiaW5zZWN1cmUtY29tbWFuZHMiOgogICAgInJlbWFwIjoKICAgICAgInNldmVyaXR5IjogImhpZ2giCiAgImtub3duLXZ1bG5lcmFibGUtYWN0aW9ucyI6CiAgICAicmVtYXAiOgogICAgICAic2V2ZXJpdHkiOiAiaGlnaCIKICAidGVtcGxhdGUtaW5qZWN0aW9uIjoKICAgICJyZW1hcCI6CiAgICAgICJzZXZlcml0eSI6ICJoaWdoIgogICJ1bnBpbm5lZC11c2VzIjoKICAgICJjb25maWciOgogICAgICAicG9saWNpZXMiOgogICAgICAgICJzbHNhLWZyYW1ld29yay9zbHNhLWdpdGh1Yi1nZW5lcmF0b3IvKiI6ICJyZWYtcGluIgogICAgInJlbWFwIjoKICAgICAgInNldmVyaXR5IjogImhpZ2giCiAgInVucmVkYWN0ZWQtc2VjcmV0cyI6CiAgICAicmVtYXAiOgogICAgICAic2V2ZXJpdHkiOiAiaGlnaCIKICAidW5zb3VuZC1jb25kaXRpb24iOgogICAgInJlbWFwIjoKICAgICAgInNldmVyaXR5IjogImhpZ2giCg==",
+            "CONTROL_CONFIG_SHA256": "f276c5d5be89f26564de12f982e33843806b3944c62bad7a5ece1025311ad812"
+          },
+          "run": "python3 - <<'PYCONFIG'\nimport os,base64,hashlib\nfrom pathlib import Path\nraw=base64.b64decode(os.environ['CONTROL_CONFIG_B64'])\nassert hashlib.sha256(raw).hexdigest()==os.environ['CONTROL_CONFIG_SHA256']\nPath(os.environ['RUNNER_TEMP'],'zizmor-config.yaml').write_bytes(raw)\nprint('Exact config SHA256:',hashlib.sha256(raw).hexdigest())\nPYCONFIG"
+        },
+        {
+          "name": "Exact upstream zizmor image and policy",
+          "env": {
+            "GH_TOKEN": "${{ github.token }}"
+          },
+          "run": "docker run --rm   --volume \"$GITHUB_WORKSPACE:/workspace:ro\"   --volume \"$RUNNER_TEMP/zizmor-config.yaml:/zizmor-config.yaml:ro\"   --workdir /workspace   --env GH_TOKEN   ghcr.io/zizmorcore/zizmor:1.25.2@sha256:14ea7f5cc7c67933394a35b5a38a277397818d232602635edb2010b313afb110   --config /zizmor-config.yaml --format github --min-confidence medium --   .github/workflows/go.yml .github/workflows/golangci-lint.yml .github/workflows/bazel.yml"
         }
       ]
     }
